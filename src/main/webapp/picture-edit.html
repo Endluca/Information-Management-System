@@ -1,0 +1,165 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit|ie-comp|ie-stand">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+<!--[if lt IE 9]>
+<script type="text/javascript" src="lib/html5shiv.js"></script>
+<script type="text/javascript" src="lib/respond.min.js"></script>
+<![endif]-->
+<link rel="stylesheet" type="text/css" href="static/h-ui/css/H-ui.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui.admin/css/H-ui.admin.css" />
+<link rel="stylesheet" type="text/css" href="lib/Hui-iconfont/1.0.8/iconfont.css" />
+<link rel="stylesheet" type="text/css" href="static/h-ui.admin/skin/default/skin.css" id="skin" />
+<link rel="stylesheet" type="text/css" href="static/h-ui.admin/css/style.css" />
+<link href="lib/webuploader/0.1.5/webuploader.css" rel="stylesheet" type="text/css" />
+<!--[if IE 6]>
+<script type="text/javascript" src="lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<title>编辑图片</title>
+</head>
+<body>
+<div class="page-container">
+    <form class="form form-horizontal" id="form-picture-edit">
+        <div class="row cl">
+            <label class="form-label col-xs-4 col-sm-2"><span class="c-red">*</span>图片名称：</label>
+            <div class="formControls col-xs-8 col-sm-9">
+                <input type="text" class="input-text" id="name" name="name" required>
+            </div>
+        </div>
+        <div class="row cl">
+            <label class="form-label col-xs-4 col-sm-2"><span class="c-red">*</span>分类：</label>
+            <div class="formControls col-xs-8 col-sm-9">
+                <input type="text" class="input-text" id="category" name="category" required>
+            </div>
+        </div>
+        <div class="row cl">
+            <label class="form-label col-xs-4 col-sm-2"><span class="c-red">*</span>封面图：</label>
+            <div class="formControls col-xs-8 col-sm-9">
+                <div id="uploader" class="wu-example">
+                    <div id="fileList" class="uploader-list"></div>
+                    <div id="filePicker">选择图片</div>
+                </div>
+                <input type="hidden" id="cover" name="cover" required>
+                <img id="cover-preview" src="" style="max-width: 200px; display:none;" />
+            </div>
+        </div>
+        <div class="row cl">
+            <label class="form-label col-xs-4 col-sm-2">标签：</label>
+            <div class="formControls col-xs-8 col-sm-9">
+                <input type="text" class="input-text" id="tags" name="tags">
+            </div>
+        </div>
+        <div class="row cl">
+            <label class="form-label col-xs-4 col-sm-2">发布状态：</label>
+            <div class="formControls col-xs-8 col-sm-9">
+                <input type="checkbox" id="status" name="status">
+            </div>
+        </div>
+        <div class="row cl">
+            <div class="col-xs-8 col-sm-9 col-xs-offset-4 col-sm-offset-2">
+                <button onClick="updatePicture();" class="btn btn-primary radius" type="button"><i class="Hui-iconfont">&#xe632;</i> 保存修改</button>
+                <button onClick="layer_close();" class="btn btn-default radius" type="button">&nbsp;&nbsp;取消&nbsp;&nbsp;</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!--_footer 作为公共模版分离出去-->
+<script type="text/javascript" src="lib/jquery/1.9.1/jquery.min.js"></script> 
+<script type="text/javascript" src="lib/layer/2.4/layer.js"></script>
+<script type="text/javascript" src="static/h-ui/js/H-ui.min.js"></script> 
+<script type="text/javascript" src="static/h-ui.admin/js/H-ui.admin.js"></script> <!--/_footer 作为公共模版分离出去-->
+
+<!--请在下方写此页面业务相关的脚本-->
+<script type="text/javascript">
+$(function() {
+    var id = getUrlParameter('id');
+    loadPicture(id);
+
+});
+
+// 初始化WebUploader
+var uploader = WebUploader.create({
+    auto: true,  // 自动上传
+    swf: 'lib/webuploader/0.1.5/Uploader.swf', // swf文件路径
+    server: 'uploadPicture', // 后端图片上传的接口
+    pick: '#filePicker', // 选择文件的按钮
+    fileVal: 'file', // 文件的名称
+    accept: {
+        title: 'Images',
+        extensions: 'jpg,jpeg,png,gif',
+        mimeTypes: 'image/*'
+    }
+});
+
+// 上传成功后，处理返回结果
+uploader.on('uploadSuccess', function (file, response) {
+    var imageUrl = response.fileUrl; // 假设后台返回的是图片的URL
+    $('#cover').val(imageUrl); // 将图片URL设置到隐藏的input中
+    $('#cover-preview').attr('src', imageUrl).show(); // 显示图片预览
+});
+
+// 错误处理
+uploader.on('error', function (type) {
+    if (type === 'Q_TYPE_DENIED') {
+        alert('文件类型不正确！');
+    }
+});
+function loadPicture(id) {
+    $.ajax({
+        type: 'GET',
+        url: 'PictureController',
+        data: { action: 'get', id: id },
+        dataType: 'json',
+        success: function(data) {
+            $('#name').val(data.name);
+            $('#category').val(data.category);
+            $('#tags').val(data.tags);
+            $('#status').prop('checked', data.status);
+            $('#cover').val(data.cover);
+            $('#cover-preview').attr('src', data.cover).show();
+        },
+        error: function() {
+            alert('加载图片信息失败');
+        }
+    });
+}
+
+function updatePicture() {
+    var id = getUrlParameter('id');
+    var pictureData = {
+        id: id,
+        name: $('#name').val(),
+        category: $('#category').val(),
+        cover: $('#cover').val(),  // 获取上传后的封面URL
+        tags: $('#tags').val(),
+        status: $('#status').is(':checked')
+    };
+
+    $.ajax({
+        type: 'POST',
+        url: 'PictureController',
+        data: { action: 'update', ...pictureData },
+        success: function() {
+            alert('图片更新成功');
+            window.parent.location.reload(); // 刷新父页面
+            layer_close(); // 关闭当前弹窗
+        },
+        error: function() {
+            alert('图片更新失败');
+        }
+    });
+}
+
+function getUrlParameter(name) {
+    var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+    return results ? results[1] : null;
+}
+</script>
+</body>
+</html> 

@@ -1,0 +1,346 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+    <meta http-equiv="Cache-Control" content="no-siteapp"/>
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="lib/html5shiv.js"></script>
+    <script type="text/javascript" src="lib/respond.min.js"></script>
+    <![endif]-->
+    <link rel="stylesheet" type="text/css" href="static/h-ui/css/H-ui.css"/>
+    <link rel="stylesheet" type="text/css" href="static/h-ui.admin/css/H-ui.admin.css"/>
+    <link rel="stylesheet" type="text/css" href="lib/Hui-iconfont/1.0.8/iconfont.css"/>
+    <link rel="stylesheet" type="text/css" href="static/h-ui.admin/skin/default/skin.css" id="skin"/>
+    <link rel="stylesheet" type="text/css" href="static/h-ui.admin/css/style.css"/>
+    <style>
+        #pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #pagination button, #pagination input {
+            margin: 0 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+
+        #pagination input {
+            width: 60px;
+            text-align: center;
+        }
+    </style>
+    <!--[if IE 6]>
+    <script type="text/javascript" src="lib/DD_belatedPNG_0.0.8a-min.js"></script>
+    <script>DD_belatedPNG.fix('*');</script>
+    <![endif]-->
+    <title>图片列表</title>
+</head>
+<body>
+<nav class="breadcrumb"><i class="Hui-iconfont">&#xe67f;</i> 首页 <span class="c-gray en">&gt;</span> 图片管理 <span
+        class="c-gray en">&gt;</span> 图片列表 <a class="btn btn-success radius r"
+                                                  style="line-height:1.6em;margin-top:3px"
+                                                  href="javascript:location.replace(location.href);" title="刷新"><i
+        class="Hui-iconfont">&#xe68f;</i></a></nav>
+<div class="page-container">
+    <div class="text-c">
+        <input type="text" id="searchQuery" placeholder="搜索 ID, 分类, 图片名称" style="width:250px"
+               class="input-text">
+        <button class="btn btn-success" type="button" onclick="loadPictures(1)"><i class="Hui-iconfont">&#xe665;</i> 搜索
+        </button>
+    </div>
+    <div class="cl pd-5 bg-1 bk-gray mt-20"><span class="l"><a href="javascript:;" onclick="datadel()"
+                                                               class="btn btn-danger radius"><i class="Hui-iconfont">&#xe6e2;</i> 批量删除</a> <a
+            class="btn btn-primary radius" onclick="picture_add('保存数据','picture-add.html')" href="javascript:;"><i
+            class="Hui-iconfont">&#xe600;</i> 添加图片</a></span> <span class="r">共有数据：<strong
+            id="totalCount">0</strong> 条</span>
+    </div>
+    <div class="mt-20">
+        <table class="table table-border table-bordered table-bg table-hover table-sort">
+            <thead>
+            <tr class="text-c">
+                <th width="40"><input name="" type="checkbox" value=""></th>
+                <th width="80">ID</th>
+                <th width="100">分类</th>
+                <th width="100">封面</th>
+                <th>图片名称</th>
+                <th width="150">Tags</th>
+                <th width="150">更新时间</th>
+                <th width="60">发布状态</th>
+                <th width="100">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!-- 图片数据将由JavaScript动态填充 -->
+            </tbody>
+        </table>
+    </div>
+    <div id="pagination" class="mt-20"></div>
+</div>
+
+<script type="text/javascript" src="lib/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="lib/layer/2.4/layer.js"></script>
+<script type="text/javascript" src="static/h-ui/js/H-ui.min.js"></script>
+<script type="text/javascript" src="static/h-ui.admin/js/H-ui.admin.js"></script>
+
+<script type="text/javascript" src="lib/My97DatePicker/4.8/WdatePicker.js"></script>
+<script type="text/javascript" src="lib/datatables/1.10.15/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="lib/laypage/1.2/laypage.js"></script>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        var table = $('.table-sort').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": function(data, callback, settings) {
+                var page = Math.floor(data.start / data.length) + 1;
+                var size = data.length;
+                var searchQuery = $('#searchQuery').val();
+                $.ajax({
+                    type: 'GET',
+                    url: 'PictureController',
+                    data: {
+                        page: page,
+                        size: size,
+                        query: searchQuery,
+                        orderColumn: data.columns[data.order[0].column].data,
+                        orderDir: data.order[0].dir
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        callback({
+                            draw: data.draw,
+                            recordsTotal: response.totalCount,
+                            recordsFiltered: response.totalCount,
+                            data: response.pictures
+                        });
+                    }
+                });
+            },
+            "columns": [
+                {"data": null, "orderable": false, "render": function() {
+                        return '<input name="" type="checkbox" value="">';
+                    }},
+                {"data": "id"},
+                {"data": "category"},
+                {"data": "cover", "render": function(data) {
+                    return '<img width="210" class="picture-thumb" src="' + data + '">';
+                }},
+                {"data": "name"},
+                {"data": "tags"},
+                {"data": "updateTime"},
+                {"data": "status", "render": function(data) {
+                    return data ? '<span class="label label-success radius">已发布</span>' : '<span class="label label-defaunt radius">已下架</span>';
+                }},
+                {"data": null, "orderable": false, "render": function(data, type, row) {
+                    var stopButton = row.status ? '<a style="text-decoration:none" onClick="picture_stop(this,\'' + row.id + '\')" href="javascript:;" title="下架"><i class="Hui-iconfont">&#xe6de;</i></a>' : '';
+                    return stopButton + ' <a style="text-decoration:none" class="ml-5" onClick="picture_edit(\'图库编辑\',\'picture-edit.html\',\'' + row.id + '\')" href="javascript:;" title="编辑"><i class="Hui-iconfont">&#xe6df;</i></a> <a style="text-decoration:none" class="ml-5" onClick="picture_del(this,\'' + row.id + '\')" href="javascript:;" title="删除"><i class="Hui-iconfont">&#xe6e2;</i></a>';
+                }}
+            ],
+            "order": [[1, "asc"]]
+        });
+
+        $('#searchQuery').on('keyup', function() {
+            table.draw();
+        });
+    });
+
+    function loadPictures(page = 1, size = 10) {
+        var searchQuery = $('#searchQuery').val();
+        $.ajax({
+            type: 'GET',
+            url: 'PictureController',
+            data: {page: page, size: size, query: searchQuery},
+            dataType: 'json',
+            success: function (data) {
+                var tbody = '';
+                if (data.totalCount === 0) {
+                    alert('查询的内容不存在');
+                } else {
+                    $.each(data.pictures, function (index, picture) {
+                        var rowClass = '';
+                        var statusLabel = '';
+                        var statusText = '';
+                        var stopButton = '';
+
+                        // Check if the picture is offline (已下架)
+                        if (picture.status) {
+                            statusLabel = '<span class="label label-success radius">已发布</span>';
+                            statusText = '已发布';
+                            stopButton = '<a style="text-decoration:none" onClick="picture_stop(this,\'' + picture.id + '\')" href="javascript:;" title="下架"><i class="Hui-iconfont">&#xe6de;</i></a>';
+                        } else {
+                            rowClass = ' class="gray-row"'; // 离线时为灰色添加类
+                            statusLabel = '<span class="label label-defaunt radius">已下架</span>';
+                            statusText = '已下架';
+                            stopButton = ''; // Remove the "下架" button
+                        }
+
+                        tbody += '<tr class="text-c' + rowClass + '">' +
+                            '<td><input name="" type="checkbox" value=""></td>' +
+                            '<td>' + picture.id + '</td>' +
+                            '<td>' + picture.category + '</td>' +
+                            '<td><img width="210" class="picture-thumb" src="' + picture.cover + '"></td>' +
+                            '<td class="text-l">' + picture.name + '</td>' +
+                            '<td class="text-c">' + picture.tags + '</td>' +
+                            '<td>' + picture.updateTime + '</td>' +
+                            '<td class="td-status">' + statusLabel + '</td>' +
+                            '<td class="td-manage">' + stopButton +
+                            ' <a style="text-decoration:none" class="ml-5" onClick="picture_edit(\'图库编辑\',\'picture-edit.html\',\'' + picture.id + '\')" href="javascript:;" title="编辑"><i class="Hui-iconfont">&#xe6df;</i></a> <a style="text-decoration:none" class="ml-5" onClick="picture_del(this,\'' + picture.id + '\')" href="javascript:;" title="删除"><i class="Hui-iconfont">&#xe6e2;</i></a></td>' +
+                            '</tr>';
+                    });
+                }
+                $('tbody').html(tbody);
+                $('#totalCount').text(data.totalCount);
+
+                // 分页控件
+                laypage({
+                    cont: 'pagination',
+                    pages: Math.ceil(data.totalCount / size),
+                    curr: page,
+                    skip: true,
+                    jump: function (obj, first) {
+                        if (!first) {
+                            loadPictures(obj.curr);
+                        }
+                    }
+                });
+
+                // 更新分页按钮状态
+                updatePaginationButtons(page, Math.ceil(data.totalCount / size));
+            }
+        });
+    }
+
+    function picture_add(title, url) {
+        var index = layer.open({
+            type: 2,
+            title: title,
+            content: url
+        });
+        layer.full(index);
+    }
+
+    function picture_show(title, url, id) {
+        var index = layer.open({
+            type: 2,
+            title: title,
+            content: url
+        });
+        layer.full(index);
+    }
+
+    function picture_stop(obj, id) {
+        layer.confirm('确认要下架吗？', function (index) {
+            updatePictureStatus(id, false);
+            $(obj).parents("tr").find(".td-status").html('<span class="label label-defaunt radius">已下架</span>');
+            $(obj).remove();
+            layer.msg('已下架!', {icon: 5, time: 1000});
+        });
+    }
+
+
+    function picture_edit(title, url, id) {
+        var index = layer.open({
+            type: 2,
+            title: title,
+            content: url + '?id=' + id
+        });
+        layer.full(index);
+    }
+
+    function picture_del(obj, id) {
+        layer.confirm('确认要删除吗？', function (index) {
+            deletePictures([id], function () {
+                $(obj).parents("tr").remove();
+                layer.msg('已删除!', {icon: 1, time: 1000});
+                layer.close(index); // 关闭确认提示框
+            });
+        });
+    }
+
+    function datadel() {
+        var ids = [];
+        $('tbody input[type="checkbox"]:checked').each(function () {
+            ids.push($(this).closest('tr').find('td:eq(1)').text()); // 获取选中行的ID
+        });
+
+        if (ids.length === 0) {
+            layer.msg('请选择要删除的图片!', {icon: 0, time: 1000});
+            return;
+        }
+
+        layer.confirm('确认要删除选中的图片吗？', function (index) {
+            deletePictures(ids, function () {
+                layer.close(index); // 关闭确认提示框
+                loadPictures();
+                layer.msg('已删除!', {icon: 1, time: 1000});
+            });
+        });
+    }
+
+    function deletePictures(ids, callback) {
+        $.ajax({
+            type: 'POST',
+            url: 'PictureController',
+            data: {action: 'delete', ids: ids.join(',')},
+            success: function (response) {
+                console.log('删除响应:', response); // 调试信息
+                var result = typeof response === 'string' ? JSON.parse(response) : response;
+                if (result.success) {
+                    console.log('删除成功'); // 调试信息
+                    if (callback) callback();
+                } else {
+                    alert('删除失败');
+                }
+            },
+            error: function () {
+                alert('删除失败');
+            }
+        });
+    }
+
+    function updatePaginationButtons(currentPage, totalPages) {
+        $('#pagination').html('');
+        var paginationHtml = '<button onclick="loadPictures(1)" ' + (currentPage === 1 ? 'disabled' : '') + '>首页</button>';
+        paginationHtml += '<button onclick="loadPictures(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + '>上一页</button>';
+        paginationHtml += '<button onclick="loadPictures(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + '>下一页</button>';
+        paginationHtml += '<button onclick="loadPictures(' + totalPages + ')" ' + (currentPage === totalPages ? 'disabled' : '') + '>尾页</button>';
+        paginationHtml += '<input type="number" id="jumpPage" min="1" max="' + totalPages + '" value="' + currentPage + '" style="width: 60px;">';
+        paginationHtml += '<button onclick="jumpToPage(' + totalPages + ')">跳转</button>';
+        $('#pagination').html(paginationHtml);
+    }
+
+    function jumpToPage(totalPages) {
+        var jumpPage = parseInt($('#jumpPage').val());
+        if (jumpPage >= 1 && jumpPage <= totalPages) {
+            loadPictures(jumpPage);
+        } else {
+            alert('请输入有效的页码');
+        }
+    }
+
+    function updatePictureStatus(id, status) {
+        $.ajax({
+            type: 'POST',
+            url: 'PictureController',
+            data: {action: 'updateStatus', id: id, status: status},
+            success: function () {
+                alert('状态更新成功');
+                loadPictures();
+            },
+            error: function () {
+                alert('状态更新失败');
+            }
+        });
+    }
+
+    loadPictures();
+</script>
+
+</body>
+</html>
